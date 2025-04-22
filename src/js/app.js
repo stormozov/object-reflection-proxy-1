@@ -1,6 +1,7 @@
-// TODO: write your code here
-import sum from './basic';
+import { objectToSortedArray } from './obj-prop-sorting';
 
-console.log('worked');
+const sortingOrder = ['name', 'level'];
+const obj = { name: 'мечник', health: 10, level: 2, attack: 80, defense: 40 };
 
-console.log(sum([1, 2]));
+const result = objectToSortedArray(obj, sortingOrder);
+console.log(result);
