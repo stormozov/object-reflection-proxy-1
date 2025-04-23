@@ -1,4 +1,4 @@
-import { objectToSortedArray } from './obj-prop-sorting';
+import { objectToSortedArray } from './obj-prop-sorting/obj-prop-sorting';
 
 const sortingOrder = ['name', 'level'];
 const obj = { name: 'мечник', health: 10, level: 2, attack: 80, defense: 40 };
