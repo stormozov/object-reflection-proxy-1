@@ -1,141 +1,98 @@
 import { objectToSortedArray } from '../obj-prop-sorting';
 
 describe('objectToSortedArray', () => {
-  it('Должен вернуть отсортир. массив, с учетом указ. порядка', () => {
-    const sortingOrder = ['name', 'level'];
-    const obj = { name: 'мечник', health: 10, level: 2, attack: 80, defense: 40 };
-    const expected = [
-      // порядок взят из массива с ключами
-      { key: 'name', value: 'мечник' },
-      { key: 'level', value: 2 },
-      // порядок по алфавиту 
-      // (т.к. в массиве с ключами нет значения "attack", "defense", "health")
-      { key: 'attack', value: 80 },
-      { key: 'defense', value: 40 },
-      { key: 'health', value: 10 }
-    ]
+  // Общие данные для тестов
+  const BASE_OBJECT = {
+    name: 'мечник',
+    health: 10,
+    level: 2,
+    attack: 80,
+    defense: 40
+  };
 
-    const received = objectToSortedArray(obj, sortingOrder);
+  const ALPHABETICAL_ORDER = [
+    { key: 'attack', value: 80 },
+    { key: 'defense', value: 40 },
+    { key: 'health', value: 10 },
+    { key: 'level', value: 2 },
+    { key: 'name', value: 'мечник' }
+  ];
 
-    expect(received).toEqual(expected);
+  describe('Базовые случаи сортировки', () => {
+    it('Сортировка с полным порядком сортировки', () => {
+      const sortingOrder = ['name', 'level'];
+      const expected = [
+        { key: 'name', value: 'мечник' },
+        { key: 'level', value: 2 },
+        ...ALPHABETICAL_ORDER.filter((x) => !['name', 'level'].includes(x.key))
+      ];
+
+      expect(objectToSortedArray(BASE_OBJECT, sortingOrder)).toEqual(expected);
+    });
+
+    it('Сортировка без указания порядка (по алфавиту)', () => {
+      expect(objectToSortedArray(BASE_OBJECT)).toEqual(ALPHABETICAL_ORDER);
+    });
+
+    it('Сортировка с частичным порядком', () => {
+      const sortingOrder = ['name'];
+      const expected = [
+        { key: 'name', value: 'мечник' },
+        ...ALPHABETICAL_ORDER.filter((x) => x.key !== 'name')
+      ];
+
+      expect(objectToSortedArray(BASE_OBJECT, sortingOrder)).toEqual(expected);
+    });
   });
 
-  it('Должен вернуть отсортир. массив, с учетом указ. порядка, кроме несуществующих ключей', () => {
-    const sortingOrder = ['name', 'level', 'lucky'];
-    const obj = { name: 'мечник', health: 10, level: 2, attack: 80, defense: 40 };
-    const expected = [
-      // порядок взят из массива с ключами
-      { key: 'name', value: 'мечник' },
-      { key: 'level', value: 2 },
-      // порядок по алфавиту 
-      // (т.к. в массиве с ключами нет значения "attack", "defense", "health")
-      { key: 'attack', value: 80 },
-      { key: 'defense', value: 40 },
-      { key: 'health', value: 10 }
-    ]
+  describe('Обработка sortingOrder', () => {
+    it('Игнорирование несуществующих ключей в порядке сортировки', () => {
+      const sortingOrder = ['name', 'invalidKey'];
+      const expected = [
+        { key: 'name', value: 'мечник' },
+        ...ALPHABETICAL_ORDER.filter((x) => x.key !== 'name')
+      ];
 
-    const received = objectToSortedArray(obj, sortingOrder);
+      expect(objectToSortedArray(BASE_OBJECT, sortingOrder)).toEqual(expected);
+    });
 
-    expect(received).toEqual(expected);
+    it('Пустой массив порядка сортировки', () => {
+      expect(objectToSortedArray(BASE_OBJECT, [])).toEqual(ALPHABETICAL_ORDER);
+    });
+
+    it('Невалидный тип порядка сортировки', () => {
+      expect(objectToSortedArray(BASE_OBJECT, 'invalid')).toEqual(ALPHABETICAL_ORDER);
+    });
   });
 
-  it('Должен вернуть отсортир. массив, если в sortingOrder указаны некоторые ключи', () => {
-    const sortingOrder = ['name']; // Указываем только один ключ
-    const obj = { name: 'мечник', health: 10, level: 2, attack: 80, defense: 40 };
-    const expected = [
-      { key: 'name', value: 'мечник' },
-      { key: 'attack', value: 80 },
-      { key: 'defense', value: 40 },
-      { key: 'health', value: 10 },
-      { key: 'level', value: 2 }
-    ];
+  describe('Особые случаи', () => {
+    it('Объект с одним свойством', () => {
+      const obj = { name: 'мечник' };
+      expect(objectToSortedArray(obj)).toEqual([{ key: 'name', value: 'мечник' }]);
+    });
 
-    const received = objectToSortedArray(obj, sortingOrder);
+    it('Объект с унаследованными свойствами', () => {
+      function Parent() {
+        this.inheritedProp = 'inherited';
+      }
+      Parent.prototype.inheritedMethod = function () { };
+      const obj = Object.create(Parent.prototype);
 
-    expect(received).toEqual(expected);
+      expect(() => objectToSortedArray(obj)).toThrow(Error);
+    });
   });
 
-  it('Должен вернуть отсортир. массив, с учетом порядка по алфавиту и без указ. порядка', () => {
-    const obj = { name: 'мечник', health: 10, level: 2, attack: 80, defense: 40 };
-    const expected = [
-      // порядок по алфавиту
-      { key: 'attack', value: 80 },
-      { key: 'defense', value: 40 },
-      { key: 'health', value: 10 },
-      { key: 'level', value: 2 },
-      { key: 'name', value: 'мечник' }
-    ]
+  describe('Обработка ошибок', () => {
+    it('Пустой объект', () => {
+      expect(() => objectToSortedArray({})).toThrow(Error);
+    });
 
-    const received = objectToSortedArray(obj);
+    it('Невалидный тип первого аргумента', () => {
+      const invalidInputs = [null, 'мечник', [], 42];
 
-    expect(received).toEqual(expected);
-  });
-
-  it('Должен вернуть отсортир. массив, если передать вторым аргументом пустой массив', () => {
-    const obj = { name: 'мечник', health: 10, level: 2, attack: 80, defense: 40 };
-    const expected = [
-      // порядок по алфавиту
-      { key: 'attack', value: 80 },
-      { key: 'defense', value: 40 },
-      { key: 'health', value: 10 },
-      { key: 'level', value: 2 },
-      { key: 'name', value: 'мечник' }
-    ]
-
-    const received = objectToSortedArray(obj, []);  
-
-    expect(received).toEqual(expected);
-  });
-
-  it('Должен вернуть отсортир. массив, если передать вторым аргументом не массив', () => {
-    const obj = { name: 'мечник', health: 10, level: 2, attack: 80, defense: 40 };
-    const expected = [
-      // порядок по алфавиту
-      { key: 'attack', value: 80 },
-      { key: 'defense', value: 40 },
-      { key: 'health', value: 10 },
-      { key: 'level', value: 2 },
-      { key: 'name', value: 'мечник' }
-    ]
-
-    const received = objectToSortedArray(obj, '');
-
-    expect(received).toEqual(expected);
-  });
-
-  it('Должен вернуть массив из одного объекта, если в переданном объекте один ключ', () => {
-    const obj = { name: 'мечник' };
-    const received = objectToSortedArray(obj);
-    const expected = [{ key: 'name', value: 'мечник' }];
-
-    expect(received).toEqual(expected);
-  });
-
-  it('Должен вернуть ошибку, если объект не содержит собственных перечисляемых свойств 1', () => {
-    function Parent() {
-      this.inheritedProp = 'inherited';
-    }
-    
-    Parent.prototype.inheritedMethod = function () { };
-
-    const obj = Object.create(Parent.prototype);
-
-    expect(() => objectToSortedArray(obj)).toThrow(Error);
-  });
-
-  it('Должен вернуть ошибку, если первый аргумент не объект', () => {
-    expect(() => objectToSortedArray('мечник')).toThrow(TypeError);
-  });
-
-  it('Должен вернуть ошибку, если объект не содержит собственных перечисляемых свойств', () => {
-    expect(() => objectToSortedArray({})).toThrow(Error);
-  });
-
-  it('Должен вернуть ошибку, если первый аргумент null', () => {
-    expect(() => objectToSortedArray(null)).toThrow(TypeError);
-  });
-
-  it('Должен вернуть ошибку, если первый аргумент массив', () => {
-    expect(() => objectToSortedArray([])).toThrow(TypeError);
+      invalidInputs.forEach(input => {
+        expect(() => objectToSortedArray(input)).toThrow(TypeError);
+      });
+    });
   });
 });
